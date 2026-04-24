@@ -44,7 +44,7 @@ function triggerDownload(href: string, filename: string) {
 const Index = () => {
   const isPreview = typeof window !== "undefined" && window.location.hostname.includes("id-preview--");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | null>(null);
+  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | "epub" | null>(null);
   const { summary, total } = useRecnikEdits();
   const hasEdits = summary.total > 0;
 
@@ -62,11 +62,27 @@ const Index = () => {
     });
   };
 
-  const handleEpubDownload = () => {
-    triggerDownload(EPUB_PATH, "ZAPLANJSKI_RECNIK_modern.epub");
-    toast.success("Преузимање EPUB-а је започето", {
-      description: "Формат за читаче е-књига",
-    });
+  const handleEpubDownload = async () => {
+    if (isExporting) return;
+    setIsExporting("epub");
+    const tid = toast.loading("Правим EPUB са твојим исправкама…");
+    try {
+      const data = buildEffectiveRecnik();
+      const blob = await generateEpub(data);
+      const url = URL.createObjectURL(blob);
+      const datestamp = new Date().toISOString().slice(0, 10);
+      triggerDownload(url, `ZAPLANJSKI_RECNIK_${datestamp}.epub`);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.success("EPUB је спреман", {
+        id: tid,
+        description: "Формат за читаче е-књига",
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при прављењу EPUB-а", { id: tid });
+    } finally {
+      setIsExporting(null);
+    }
   };
 
   const handleGenerateDocx = async () => {
