@@ -21,10 +21,10 @@ import { resetCachesAndReload } from "@/lib/versionCheck";
 import { useRecnikEdits } from "@/hooks/useRecnikEdits";
 import { buildEffectiveRecnik, clearAllEdits } from "@/lib/recnikEdits";
 import { generateDocx, generatePdf } from "@/lib/recnikExport";
+import { generateEpub } from "@/lib/recnikEpub";
 
 const PDF_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.pdf";
 const DOCX_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.docx";
-const EPUB_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.epub";
 const LIVE_URL = "https://digitalni-zaplanjski-recnik.lovable.app";
 
 const ALPHABET = [
