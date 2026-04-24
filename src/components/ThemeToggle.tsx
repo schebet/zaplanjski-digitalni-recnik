@@ -59,7 +59,7 @@ const ThemeToggle = () => {
       aria-label={label}
       title={label}
       onClick={() => setTheme(next[theme])}
-      className="fixed right-4 top-4 z-50 h-10 w-10 rounded-full border-border bg-background/80 shadow-md backdrop-blur"
+      className="fixed right-1 top-4 z-50 h-10 w-10 rounded-full border-border bg-background/80 shadow-md backdrop-blur sm:right-2"
     >
       <Icon className="h-4 w-4" />
     </Button>
