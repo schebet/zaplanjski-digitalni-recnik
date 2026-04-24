@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { recnik, TOTAL_ENTRIES } from "@/data/recnik";
 import BackToTop from "@/components/BackToTop";
 import CategoryBrowser from "@/components/CategoryBrowser";
+import CategoryManager from "@/components/CategoryManager";
 import { resetCachesAndReload } from "@/lib/versionCheck";
 import { useRecnikEdits } from "@/hooks/useRecnikEdits";
 import { buildEffectiveRecnik, clearAllEdits } from "@/lib/recnikEdits";
@@ -235,6 +236,7 @@ const Index = () => {
                 <Download className="h-4 w-4" />
                 {isExporting === "pdf" ? "Правим PDF…" : "Преузми измењени PDF"}
               </Button>
+              <CategoryManager />
               {hasEdits && (
                 <Button
                   size="sm"

@@ -31,10 +31,19 @@ export type Override = EditOverride | DeleteOverride | AddOverride;
 export interface EditsState {
   // keyed by EditId
   overrides: Record<EditId, Override>;
+  /** User-added categories (in addition to the built-in ones from recnik.json). */
+  customCategories?: string[];
+  /** Categories the user marked as deleted (hidden everywhere, removed from entries). */
+  deletedCategories?: string[];
   updatedAt: number;
 }
 
-const emptyState = (): EditsState => ({ overrides: {}, updatedAt: 0 });
+const emptyState = (): EditsState => ({
+  overrides: {},
+  customCategories: [],
+  deletedCategories: [],
+  updatedAt: 0,
+});
 
 export function loadEdits(): EditsState {
   if (typeof window === "undefined") return emptyState();
@@ -43,7 +52,12 @@ export function loadEdits(): EditsState {
     if (!raw) return emptyState();
     const parsed = JSON.parse(raw) as EditsState;
     if (!parsed || typeof parsed !== "object" || !parsed.overrides) return emptyState();
-    return parsed;
+    return {
+      overrides: parsed.overrides,
+      customCategories: parsed.customCategories ?? [],
+      deletedCategories: parsed.deletedCategories ?? [],
+      updatedAt: parsed.updatedAt ?? 0,
+    };
   } catch {
     return emptyState();
   }
@@ -81,6 +95,10 @@ export interface RuntimeEntry extends Entry {
 
 /** Build the effective per-letter list, applying overrides. */
 export function getEffectiveByLetter(state: EditsState): Record<string, RuntimeEntry[]> {
+  const deleted = new Set(state.deletedCategories ?? []);
+  const stripDeletedCat = (e: Entry): Entry =>
+    e.category && deleted.has(e.category) ? { ...e, category: undefined } : e;
+
   const result: Record<string, RuntimeEntry[]> = {};
   for (const letter of recnik.alphabet) {
     const original = recnik.byLetter[letter] ?? [];
@@ -90,9 +108,11 @@ export function getEffectiveByLetter(state: EditsState): Record<string, RuntimeE
       const ov = state.overrides[id];
       if (ov?.type === "delete") return;
       if (ov?.type === "edit") {
-        list.push({ ...ov.data, letter, __id: id, __isEdited: true });
+        const e = stripDeletedCat(ov.data);
+        list.push({ ...e, letter, __id: id, __isEdited: true });
       } else {
-        list.push({ ...entry, __id: id });
+        const e = stripDeletedCat(entry);
+        list.push({ ...e, __id: id });
       }
     });
     result[letter] = list;
@@ -100,7 +120,7 @@ export function getEffectiveByLetter(state: EditsState): Record<string, RuntimeE
   // Append new entries
   for (const [id, ov] of Object.entries(state.overrides)) {
     if (ov.type !== "add") continue;
-    const e = ov.data;
+    const e = stripDeletedCat(ov.data);
     const letter = (e.letter || "").toUpperCase();
     if (!result[letter]) result[letter] = [];
     result[letter].push({ ...e, letter, __id: id, __isNew: true });
@@ -123,10 +143,59 @@ export function getEffectiveStats(byLetter: Record<string, RuntimeEntry[]>): {
   return { stats, total };
 }
 
+/**
+ * Effective category list & per-category counts.
+ *
+ * - Starts from built-in categories in recnik.json.
+ * - Adds user-created categories.
+ * - Removes user-deleted categories.
+ * - Recounts based on the live (edited) entries.
+ */
+export function getEffectiveCategories(
+  state: EditsState,
+  byLetter: Record<string, RuntimeEntry[]>,
+): { categories: string[]; stats: Record<string, number> } {
+  const deleted = new Set(state.deletedCategories ?? []);
+  const builtins = (recnik.categories ?? []).filter((c) => !deleted.has(c));
+  const customs = (state.customCategories ?? []).filter((c) => !deleted.has(c));
+
+  // Union, preserving order: built-ins first, then customs (de-duped).
+  const seen = new Set<string>();
+  const categories: string[] = [];
+  for (const c of [...builtins, ...customs]) {
+    if (!seen.has(c)) {
+      seen.add(c);
+      categories.push(c);
+    }
+  }
+
+  // Recount from live entries.
+  const stats: Record<string, number> = {};
+  for (const c of categories) stats[c] = 0;
+  for (const letter of Object.keys(byLetter)) {
+    for (const e of byLetter[letter]) {
+      if (!e.category) continue;
+      if (deleted.has(e.category)) continue;
+      // Auto-include category that exists on entries even if not registered yet
+      if (!(e.category in stats)) {
+        stats[e.category] = 0;
+        if (!seen.has(e.category)) {
+          seen.add(e.category);
+          categories.push(e.category);
+        }
+      }
+      stats[e.category] += 1;
+    }
+  }
+
+  return { categories, stats };
+}
+
 /** Build a full RecnikData snapshot with all edits applied (for export). */
 export function buildEffectiveRecnik(state: EditsState = loadEdits()): RecnikData {
   const byLetter = getEffectiveByLetter(state);
   const { stats } = getEffectiveStats(byLetter);
+  const { categories, stats: categoryStats } = getEffectiveCategories(state, byLetter);
   // Strip runtime-only fields when exporting
   const cleaned: Record<string, Entry[]> = {};
   for (const letter of recnik.alphabet) {
@@ -136,8 +205,8 @@ export function buildEffectiveRecnik(state: EditsState = loadEdits()): RecnikDat
     alphabet: recnik.alphabet,
     stats,
     byLetter: cleaned,
-    categories: recnik.categories,
-    categoryStats: recnik.categoryStats,
+    categories,
+    categoryStats,
   };
 }
 
@@ -187,4 +256,98 @@ export function summarizeEdits(state: EditsState = loadEdits()) {
     else if (ov.type === "add") adds++;
   }
   return { edits, deletes, adds, total: edits + deletes + adds };
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Category mutators                             */
+/* -------------------------------------------------------------------------- */
+
+/** Add a brand-new category. No-op if it already exists or is blank. */
+export function addCategory(name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  const state = loadEdits();
+  const builtins = new Set(recnik.categories ?? []);
+  const customs = new Set(state.customCategories ?? []);
+  // If it was previously deleted, just un-delete it.
+  const deleted = new Set(state.deletedCategories ?? []);
+  if (deleted.has(trimmed)) {
+    state.deletedCategories = (state.deletedCategories ?? []).filter((c) => c !== trimmed);
+    saveEdits(state);
+    return true;
+  }
+  if (builtins.has(trimmed) || customs.has(trimmed)) return false;
+  state.customCategories = [...(state.customCategories ?? []), trimmed];
+  saveEdits(state);
+  return true;
+}
+
+/**
+ * Delete a category. Built-ins are tombstoned (added to deletedCategories so
+ * they stop appearing). Custom categories are simply removed from the list.
+ * Any entries currently using the category will have it stripped at read time.
+ */
+export function deleteCategory(name: string) {
+  const state = loadEdits();
+  const builtins = new Set(recnik.categories ?? []);
+  if (builtins.has(name)) {
+    const set = new Set(state.deletedCategories ?? []);
+    set.add(name);
+    state.deletedCategories = Array.from(set);
+  }
+  state.customCategories = (state.customCategories ?? []).filter((c) => c !== name);
+  saveEdits(state);
+}
+
+/**
+ * Rename a category everywhere it is used. Updates the registry (custom
+ * categories) and patches every entry currently tagged with `from`.
+ */
+export function renameCategory(from: string, to: string) {
+  const target = to.trim();
+  if (!target || target === from) return;
+  const state = loadEdits();
+
+  // 1) Update the registry
+  const builtins = new Set(recnik.categories ?? []);
+  if (builtins.has(from)) {
+    // Tombstone the old built-in name and add the new one as a custom category.
+    const del = new Set(state.deletedCategories ?? []);
+    del.add(from);
+    state.deletedCategories = Array.from(del);
+    if (!builtins.has(target) && !(state.customCategories ?? []).includes(target)) {
+      state.customCategories = [...(state.customCategories ?? []), target];
+    }
+  } else {
+    state.customCategories = (state.customCategories ?? []).map((c) =>
+      c === from ? target : c,
+    );
+  }
+  // If the new name was previously tombstoned, un-tombstone it.
+  state.deletedCategories = (state.deletedCategories ?? []).filter((c) => c !== target);
+
+  // 2) Patch every entry that uses the old category, including originals.
+  const seenIds = new Set<string>();
+  for (const [id, ov] of Object.entries(state.overrides)) {
+    if (ov.type === "edit" || ov.type === "add") {
+      if (ov.data.category === from) {
+        state.overrides[id] = { ...ov, data: { ...ov.data, category: target } };
+      }
+    }
+    seenIds.add(id);
+  }
+  for (const letter of recnik.alphabet) {
+    const original = recnik.byLetter[letter] ?? [];
+    original.forEach((entry, idx) => {
+      if (entry.category !== from) return;
+      const id = originalEntryId(letter, idx);
+      if (seenIds.has(id)) return; // already handled (edited/deleted)
+      state.overrides[id] = {
+        type: "edit",
+        data: { ...entry, category: target },
+      };
+    });
+  }
+
+  saveEdits(state);
 }
