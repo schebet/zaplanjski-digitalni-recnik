@@ -128,6 +128,63 @@ const Index = () => {
               Преузми EPUB
             </Button>
           </div>
+
+          {/* Fresh-export buttons (apply local edits) */}
+          <div className="mt-6 rounded-2xl border border-border bg-card/60 p-5 shadow-sm">
+            <div className="mb-3 flex flex-col items-center justify-center gap-1 text-center">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  Свежи фајлови са твојим исправкама
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {hasEdits ? (
+                  <>
+                    {summary.edits} измена · {summary.adds} додатих · {summary.deletes} обрисаних
+                    {" "}
+                    одредница · укупно {total.toLocaleString("sr-Cyrl")}
+                  </>
+                ) : (
+                  "Уреди речи кликом на оловку у слову, па генериши свеже фајлове овде."
+                )}
+              </p>
+            </div>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                onClick={handleGenerateDocx}
+                disabled={isExporting !== null}
+                variant="outline"
+                className="h-12 gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                {isExporting === "docx" ? "Правим DOCX…" : "Преузми измењени DOCX"}
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleGeneratePdf}
+                disabled={isExporting !== null}
+                variant="outline"
+                className="h-12 gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting === "pdf" ? "Правим PDF…" : "Преузми измењени PDF"}
+              </Button>
+              {hasEdits && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleClearEdits}
+                  className="h-9 gap-2 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Поништи све измене
+                </Button>
+              )}
+            </div>
+          </div>
+
           {isPreview && (
             <div className="mt-4 flex justify-center">
               <Button asChild variant="outline" size="sm" className="gap-2">
