@@ -20,7 +20,7 @@ const BackToTop = () => {
       size="icon"
       aria-label="Повратак на врх"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg shadow-primary/30"
+      className="fixed bottom-6 right-1 z-50 h-12 w-12 rounded-full shadow-lg shadow-primary/30 sm:right-2"
     >
       <ArrowUp className="h-5 w-5" />
     </Button>
