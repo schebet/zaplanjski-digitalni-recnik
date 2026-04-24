@@ -236,6 +236,7 @@ const Index = () => {
                 <Download className="h-4 w-4" />
                 {isExporting === "pdf" ? "Правим PDF…" : "Преузми измењени PDF"}
               </Button>
+              <CategoryManager />
               {hasEdits && (
                 <Button
                   size="sm"
