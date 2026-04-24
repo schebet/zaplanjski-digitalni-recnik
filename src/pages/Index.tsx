@@ -10,12 +10,17 @@ import {
   Hash,
   RefreshCw,
   Book,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { recnik, TOTAL_ENTRIES } from "@/data/recnik";
 import BackToTop from "@/components/BackToTop";
 import CategoryBrowser from "@/components/CategoryBrowser";
 import { resetCachesAndReload } from "@/lib/versionCheck";
+import { useRecnikEdits } from "@/hooks/useRecnikEdits";
+import { buildEffectiveRecnik, clearAllEdits } from "@/lib/recnikEdits";
+import { generateDocx, generatePdf } from "@/lib/recnikExport";
 
 const PDF_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.pdf";
 const DOCX_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.docx";
