@@ -133,6 +133,59 @@ const Index = () => {
     }
   };
 
+  const handleJsonExport = () => {
+    if (isExporting) return;
+    setIsExporting("json");
+    try {
+      const payload = buildExportPayload();
+      const datestamp = new Date().toISOString().slice(0, 10);
+      downloadJson(`ZAPLANJSKI_RECNIK_${datestamp}.json`, payload);
+      toast.success("JSON је преузет", {
+        description: `${total.toLocaleString("sr-Cyrl")} одредница • са изменама`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при извозу JSON-а");
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleJsonImportClick = () => {
+    if (isImporting) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleJsonFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset input so the same file can be picked again later.
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+    if (
+      hasEdits &&
+      !confirm(
+        `Учитавањем фајла биће замењене све твоје тренутне локалне измене (${summary.total}). Наставити?`,
+      )
+    ) {
+      return;
+    }
+    setIsImporting(true);
+    const tid = toast.loading("Учитавам JSON…");
+    try {
+      const result = await importJsonFile(file);
+      toast.success("Речник је учитан", {
+        id: tid,
+        description: `${result.totalEntries.toLocaleString("sr-Cyrl")} одредница · ${result.edits} измена · ${result.adds} додатих · ${result.deletes} обрисаних`,
+      });
+    } catch (err) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : "Неуспео увоз JSON-а";
+      toast.error("Грешка при учитавању", { id: tid, description: message });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleClearEdits = () => {
     if (!confirm(`Обрисати све твоје локалне измене (${summary.total})?`)) return;
     clearAllEdits();
