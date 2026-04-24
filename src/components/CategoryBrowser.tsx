@@ -65,9 +65,11 @@ function colorForCategory(name: string, index: number) {
 }
 
 /** Po opadajućem broju odrednica, sa "Остало" uvek na kraju radi jasnije navigacije. */
-function getOrderedCategories(): { name: string; count: number }[] {
-  const stats = recnik.categoryStats ?? {};
-  const list = Object.entries(stats).map(([name, count]) => ({ name, count }));
+function getOrderedCategories(
+  cats: string[],
+  stats: Record<string, number>,
+): { name: string; count: number }[] {
+  const list = cats.map((name) => ({ name, count: stats[name] ?? 0 }));
   list.sort((a, b) => {
     if (a.name === "Остало") return 1;
     if (b.name === "Остало") return -1;
@@ -76,16 +78,28 @@ function getOrderedCategories(): { name: string; count: number }[] {
   return list;
 }
 
-/** Sve odrednice spljoštene jednom — kategorije se filtriraju iz ovog niza. */
-const ALL_ENTRIES: Entry[] = Object.values(recnik.byLetter).flat();
-
 const CategoryBrowser = () => {
-  const categories = useMemo(getOrderedCategories, []);
+  const { byLetter, categories: liveCats, categoryStats } = useRecnikEdits();
+  const categories = useMemo(
+    () => getOrderedCategories(liveCats, categoryStats),
+    [liveCats, categoryStats],
+  );
+  const allEntries = useMemo<Entry[]>(
+    () => Object.values(byLetter).flat(),
+    [byLetter],
+  );
   const [active, setActive] = useState<string>(categories[0]?.name ?? "Остало");
   const [sort, setSort] = useState<SortMode>("alpha");
 
+  // If the active category disappears (deleted), fall back to the first one.
+  useEffect(() => {
+    if (!categories.find((c) => c.name === active)) {
+      setActive(categories[0]?.name ?? "");
+    }
+  }, [categories, active]);
+
   const entries = useMemo(() => {
-    const filtered = ALL_ENTRIES.filter((e) => e.category === active);
+    const filtered = allEntries.filter((e) => e.category === active);
     if (sort === "alpha") {
       return [...filtered].sort((a, b) =>
         normalize(a.headword).localeCompare(normalize(b.headword), "sr"),
@@ -98,7 +112,7 @@ const CategoryBrowser = () => {
       if (la !== lb) return la - lb;
       return normalize(a.headword).localeCompare(normalize(b.headword), "sr");
     });
-  }, [active, sort]);
+  }, [allEntries, active, sort]);
 
   // Group za prikaz po slovu (samo kad sort === "letter")
   const grouped = useMemo(() => {
