@@ -52,7 +52,12 @@ export function loadEdits(): EditsState {
     if (!raw) return emptyState();
     const parsed = JSON.parse(raw) as EditsState;
     if (!parsed || typeof parsed !== "object" || !parsed.overrides) return emptyState();
-    return parsed;
+    return {
+      overrides: parsed.overrides,
+      customCategories: parsed.customCategories ?? [],
+      deletedCategories: parsed.deletedCategories ?? [],
+      updatedAt: parsed.updatedAt ?? 0,
+    };
   } catch {
     return emptyState();
   }
