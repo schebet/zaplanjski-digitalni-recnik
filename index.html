@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="sr-Cyrl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ЗАПЛАЊСКИ РЕЧНИК</title>
+    <meta name="description" content="Дигитални речник за заплањски дијалекат, са претрагом и ћириличном навигацијом.">
+    <meta name="author" content="Lovable" />
+
+    <!-- PWA / Installability (manifest is injected by vite-plugin-pwa at build) -->
+
+    <meta name="theme-color" content="#1e3a8a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Речник" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/896b7084-ce29-41c3-932f-22ec4a61432c/id-preview-f33e0af4--780d6bd9-d721-4450-ae97-5c2e1a540e06.lovable.app-1776861500248.png">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/896b7084-ce29-41c3-932f-22ec4a61432c/id-preview-f33e0af4--780d6bd9-d721-4450-ae97-5c2e1a540e06.lovable.app-1776861500248.png">
+
+    
+    
+    
+    
+    
+  
+  
+  
+  <meta property="og:title" content="ЗАПЛАЊСКИ РЕЧНИК">
+  <meta name="twitter:title" content="ЗАПЛАЊСКИ РЕЧНИК">
+  <meta property="og:description" content="Дигитални речник за заплањски дијалекат, са претрагом и ћириличном навигацијом.">
+  <meta name="twitter:description" content="Дигитални речник за заплањски дијалекат, са претрагом и ћириличном навигацијом.">
+</head>
+
+  <body>
+    <script>
+      // Primeni temu pre rendera da nema treperenja (FOUC)
+      (function () {
+        try {
+          var t = localStorage.getItem("theme") || "system";
+          var dark =
+            t === "dark" ||
+            (t === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
