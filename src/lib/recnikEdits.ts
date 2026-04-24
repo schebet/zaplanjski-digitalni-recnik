@@ -31,10 +31,19 @@ export type Override = EditOverride | DeleteOverride | AddOverride;
 export interface EditsState {
   // keyed by EditId
   overrides: Record<EditId, Override>;
+  /** User-added categories (in addition to the built-in ones from recnik.json). */
+  customCategories?: string[];
+  /** Categories the user marked as deleted (hidden everywhere, removed from entries). */
+  deletedCategories?: string[];
   updatedAt: number;
 }
 
-const emptyState = (): EditsState => ({ overrides: {}, updatedAt: 0 });
+const emptyState = (): EditsState => ({
+  overrides: {},
+  customCategories: [],
+  deletedCategories: [],
+  updatedAt: 0,
+});
 
 export function loadEdits(): EditsState {
   if (typeof window === "undefined") return emptyState();
