@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,8 @@ import {
   Book,
   Sparkles,
   Trash2,
+  Upload,
+  FileJson,
 } from "lucide-react";
 import { toast } from "sonner";
 import { recnik, TOTAL_ENTRIES } from "@/data/recnik";
@@ -23,6 +25,11 @@ import { useRecnikEdits } from "@/hooks/useRecnikEdits";
 import { buildEffectiveRecnik, clearAllEdits } from "@/lib/recnikEdits";
 import { generateDocx, generatePdf } from "@/lib/recnikExport";
 import { generateEpub } from "@/lib/recnikEpub";
+import {
+  buildExportPayload,
+  downloadJson,
+  importJsonFile,
+} from "@/lib/recnikJsonIO";
 
 const PDF_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.pdf";
 const DOCX_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.docx";
