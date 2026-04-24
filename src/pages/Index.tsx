@@ -44,6 +44,9 @@ function triggerDownload(href: string, filename: string) {
 const Index = () => {
   const isPreview = typeof window !== "undefined" && window.location.hostname.includes("id-preview--");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | null>(null);
+  const { summary, total } = useRecnikEdits();
+  const hasEdits = summary.total > 0;
 
   const handlePdfDownload = () => {
     triggerDownload(PDF_PATH, "ZAPLANJSKI_RECNIK_modern.pdf");
@@ -64,6 +67,50 @@ const Index = () => {
     toast.success("Преузимање EPUB-а је започето", {
       description: "Формат за читаче е-књига",
     });
+  };
+
+  const handleGenerateDocx = async () => {
+    if (isExporting) return;
+    setIsExporting("docx");
+    const tid = toast.loading("Правим свеж DOCX са твојим исправкама…");
+    try {
+      const data = buildEffectiveRecnik();
+      const blob = await generateDocx(data);
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, `ZAPLANJSKI_RECNIK_izmenjeno_${new Date().toISOString().slice(0, 10)}.docx`);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.success("DOCX је спреман", { id: tid, description: `${total.toLocaleString("sr-Cyrl")} одредница` });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при прављењу DOCX-а", { id: tid });
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleGeneratePdf = async () => {
+    if (isExporting) return;
+    setIsExporting("pdf");
+    const tid = toast.loading("Правим свеж PDF са твојим исправкама…");
+    try {
+      const data = buildEffectiveRecnik();
+      const blob = await generatePdf(data);
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, `ZAPLANJSKI_RECNIK_izmenjeno_${new Date().toISOString().slice(0, 10)}.pdf`);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.success("PDF је спреман", { id: tid, description: `${total.toLocaleString("sr-Cyrl")} одредница` });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при прављењу PDF-а", { id: tid });
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleClearEdits = () => {
+    if (!confirm(`Обрисати све твоје локалне измене (${summary.total})?`)) return;
+    clearAllEdits();
+    toast.success("Све локалне измене су обрисане");
   };
 
   const handleHardRefresh = async () => {
