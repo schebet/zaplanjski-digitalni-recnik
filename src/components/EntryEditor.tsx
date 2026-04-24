@@ -251,13 +251,49 @@ export default function EntryEditor({ open, onOpenChange, entry, letter }: Entry
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="cat">Категорија (опционо)</Label>
-            <Input
-              id="cat"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="нпр. Тело и здравље, Особине..."
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="cat">Категорија (опционо)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+                onClick={handleAddCategory}
+                title="Додај нову категорију"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Нова категорија
+              </Button>
+            </div>
+            <Select
+              value={category || "__none__"}
+              onValueChange={(v) => setCategory(v === "__none__" ? "" : v)}
+            >
+              <SelectTrigger id="cat">
+                <SelectValue placeholder="Изабери категорију..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">
+                  <span className="text-muted-foreground">— без категорије —</span>
+                </SelectItem>
+                {/* Show the current category at top if it's no longer in the list (e.g. just deleted). */}
+                {category && !categories.includes(category) && (
+                  <SelectItem value={category}>
+                    {category} <span className="text-muted-foreground">(прилагођено)</span>
+                  </SelectItem>
+                )}
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                    {categoryStats[c] !== undefined && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({categoryStats[c]})
+                      </span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
