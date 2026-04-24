@@ -11,14 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Trash2, Scissors, Undo2 } from "lucide-react";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { Trash2, Scissors, Undo2, Plus } from "lucide-react";
+import {
+  addCategory,
   deleteEntry,
   revertEntry,
   upsertEdit,
   type RuntimeEntry,
 } from "@/lib/recnikEdits";
+import { useRecnikEdits } from "@/hooks/useRecnikEdits";
 import type { Entry } from "@/data/recnik";
 
 interface EntryEditorProps {
