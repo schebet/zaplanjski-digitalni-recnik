@@ -52,7 +52,9 @@ function triggerDownload(href: string, filename: string) {
 const Index = () => {
   const isPreview = typeof window !== "undefined" && window.location.hostname.includes("id-preview--");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | "epub" | null>(null);
+  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | "epub" | "json" | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { summary, total } = useRecnikEdits();
   const hasEdits = summary.total > 0;
 
