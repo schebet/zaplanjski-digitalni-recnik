@@ -176,13 +176,13 @@ const Recnik = () => {
                       </Badge>
                     )}
                     {e.__isNew && (
-                      <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-400">
+                      <Badge className="gap-1 bg-primary/15 text-primary hover:bg-primary/15">
                         <Sparkles className="h-3 w-3" />
                         нова
                       </Badge>
                     )}
                     {e.__isEdited && (
-                      <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-400">
+                      <Badge variant="outline" className="border-primary/40 text-primary">
                         измењена
                       </Badge>
                     )}
