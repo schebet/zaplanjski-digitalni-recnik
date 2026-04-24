@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   EditsState,
   getEffectiveByLetter,
+  getEffectiveCategories,
   getEffectiveStats,
   loadEdits,
   summarizeEdits,
@@ -30,8 +31,18 @@ export function useRecnikEdits() {
   const byLetter = useMemo(() => getEffectiveByLetter(state), [state]);
   const stats = useMemo(() => getEffectiveStats(byLetter), [byLetter]);
   const summary = useMemo(() => summarizeEdits(state), [state]);
+  const cats = useMemo(() => getEffectiveCategories(state, byLetter), [state, byLetter]);
 
   const refresh = useCallback(() => setState(loadEdits()), []);
 
-  return { state, byLetter, stats: stats.stats, total: stats.total, summary, refresh };
+  return {
+    state,
+    byLetter,
+    stats: stats.stats,
+    total: stats.total,
+    summary,
+    categories: cats.categories,
+    categoryStats: cats.stats,
+    refresh,
+  };
 }
