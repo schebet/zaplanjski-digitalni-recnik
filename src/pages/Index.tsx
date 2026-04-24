@@ -10,12 +10,17 @@ import {
   Hash,
   RefreshCw,
   Book,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { recnik, TOTAL_ENTRIES } from "@/data/recnik";
 import BackToTop from "@/components/BackToTop";
 import CategoryBrowser from "@/components/CategoryBrowser";
 import { resetCachesAndReload } from "@/lib/versionCheck";
+import { useRecnikEdits } from "@/hooks/useRecnikEdits";
+import { buildEffectiveRecnik, clearAllEdits } from "@/lib/recnikEdits";
+import { generateDocx, generatePdf } from "@/lib/recnikExport";
 
 const PDF_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.pdf";
 const DOCX_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.docx";
@@ -39,6 +44,9 @@ function triggerDownload(href: string, filename: string) {
 const Index = () => {
   const isPreview = typeof window !== "undefined" && window.location.hostname.includes("id-preview--");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | null>(null);
+  const { summary, total } = useRecnikEdits();
+  const hasEdits = summary.total > 0;
 
   const handlePdfDownload = () => {
     triggerDownload(PDF_PATH, "ZAPLANJSKI_RECNIK_modern.pdf");
@@ -59,6 +67,50 @@ const Index = () => {
     toast.success("Преузимање EPUB-а је започето", {
       description: "Формат за читаче е-књига",
     });
+  };
+
+  const handleGenerateDocx = async () => {
+    if (isExporting) return;
+    setIsExporting("docx");
+    const tid = toast.loading("Правим свеж DOCX са твојим исправкама…");
+    try {
+      const data = buildEffectiveRecnik();
+      const blob = await generateDocx(data);
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, `ZAPLANJSKI_RECNIK_izmenjeno_${new Date().toISOString().slice(0, 10)}.docx`);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.success("DOCX је спреман", { id: tid, description: `${total.toLocaleString("sr-Cyrl")} одредница` });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при прављењу DOCX-а", { id: tid });
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleGeneratePdf = async () => {
+    if (isExporting) return;
+    setIsExporting("pdf");
+    const tid = toast.loading("Правим свеж PDF са твојим исправкама…");
+    try {
+      const data = buildEffectiveRecnik();
+      const blob = await generatePdf(data);
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, `ZAPLANJSKI_RECNIK_izmenjeno_${new Date().toISOString().slice(0, 10)}.pdf`);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.success("PDF је спреман", { id: tid, description: `${total.toLocaleString("sr-Cyrl")} одредница` });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при прављењу PDF-а", { id: tid });
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleClearEdits = () => {
+    if (!confirm(`Обрисати све твоје локалне измене (${summary.total})?`)) return;
+    clearAllEdits();
+    toast.success("Све локалне измене су обрисане");
   };
 
   const handleHardRefresh = async () => {
@@ -123,6 +175,63 @@ const Index = () => {
               Преузми EPUB
             </Button>
           </div>
+
+          {/* Fresh-export buttons (apply local edits) */}
+          <div className="mt-6 rounded-2xl border border-border bg-card/60 p-5 shadow-sm">
+            <div className="mb-3 flex flex-col items-center justify-center gap-1 text-center">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  Свежи фајлови са твојим исправкама
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {hasEdits ? (
+                  <>
+                    {summary.edits} измена · {summary.adds} додатих · {summary.deletes} обрисаних
+                    {" "}
+                    одредница · укупно {total.toLocaleString("sr-Cyrl")}
+                  </>
+                ) : (
+                  "Уреди речи кликом на оловку у слову, па генериши свеже фајлове овде."
+                )}
+              </p>
+            </div>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                onClick={handleGenerateDocx}
+                disabled={isExporting !== null}
+                variant="outline"
+                className="h-12 gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                {isExporting === "docx" ? "Правим DOCX…" : "Преузми измењени DOCX"}
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleGeneratePdf}
+                disabled={isExporting !== null}
+                variant="outline"
+                className="h-12 gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting === "pdf" ? "Правим PDF…" : "Преузми измењени PDF"}
+              </Button>
+              {hasEdits && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleClearEdits}
+                  className="h-9 gap-2 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Поништи све измене
+                </Button>
+              )}
+            </div>
+          </div>
+
           {isPreview && (
             <div className="mt-4 flex justify-center">
               <Button asChild variant="outline" size="sm" className="gap-2">
