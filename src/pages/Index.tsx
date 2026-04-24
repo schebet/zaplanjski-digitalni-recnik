@@ -215,13 +215,13 @@ const Index = () => {
                 )}
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
               <Button
                 size="lg"
                 onClick={handleGenerateDocx}
                 disabled={isExporting !== null}
                 variant="outline"
-                className="h-12 gap-2"
+                className="h-12 w-full gap-2"
               >
                 <FileText className="h-4 w-4" />
                 {isExporting === "docx" ? "Правим DOCX…" : "Преузми измењени DOCX"}
@@ -231,22 +231,24 @@ const Index = () => {
                 onClick={handleGeneratePdf}
                 disabled={isExporting !== null}
                 variant="outline"
-                className="h-12 gap-2"
+                className="h-12 w-full gap-2"
               >
                 <Download className="h-4 w-4" />
                 {isExporting === "pdf" ? "Правим PDF…" : "Преузми измењени PDF"}
               </Button>
               <CategoryManager />
-              {hasEdits && (
+              {hasEdits ? (
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={handleClearEdits}
-                  className="h-9 gap-2 text-muted-foreground hover:text-destructive"
+                  className="h-12 w-full gap-2 text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                   Поништи све измене
                 </Button>
+              ) : (
+                <div className="hidden lg:block" aria-hidden="true" />
               )}
             </div>
           </div>

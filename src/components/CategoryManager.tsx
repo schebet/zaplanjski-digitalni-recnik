@@ -79,7 +79,7 @@ export default function CategoryManager() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2">
+        <Button variant="outline" size="lg" className="h-12 w-full gap-2">
           <Tag className="h-4 w-4" />
           Уреди категорије
         </Button>
