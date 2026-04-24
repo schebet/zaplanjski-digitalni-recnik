@@ -95,6 +95,10 @@ export interface RuntimeEntry extends Entry {
 
 /** Build the effective per-letter list, applying overrides. */
 export function getEffectiveByLetter(state: EditsState): Record<string, RuntimeEntry[]> {
+  const deleted = new Set(state.deletedCategories ?? []);
+  const stripDeletedCat = (e: Entry): Entry =>
+    e.category && deleted.has(e.category) ? { ...e, category: undefined } : e;
+
   const result: Record<string, RuntimeEntry[]> = {};
   for (const letter of recnik.alphabet) {
     const original = recnik.byLetter[letter] ?? [];
@@ -104,9 +108,11 @@ export function getEffectiveByLetter(state: EditsState): Record<string, RuntimeE
       const ov = state.overrides[id];
       if (ov?.type === "delete") return;
       if (ov?.type === "edit") {
-        list.push({ ...ov.data, letter, __id: id, __isEdited: true });
+        const e = stripDeletedCat(ov.data);
+        list.push({ ...e, letter, __id: id, __isEdited: true });
       } else {
-        list.push({ ...entry, __id: id });
+        const e = stripDeletedCat(entry);
+        list.push({ ...e, __id: id });
       }
     });
     result[letter] = list;
@@ -114,7 +120,7 @@ export function getEffectiveByLetter(state: EditsState): Record<string, RuntimeE
   // Append new entries
   for (const [id, ov] of Object.entries(state.overrides)) {
     if (ov.type !== "add") continue;
-    const e = ov.data;
+    const e = stripDeletedCat(ov.data);
     const letter = (e.letter || "").toUpperCase();
     if (!result[letter]) result[letter] = [];
     result[letter].push({ ...e, letter, __id: id, __isNew: true });
@@ -137,10 +143,59 @@ export function getEffectiveStats(byLetter: Record<string, RuntimeEntry[]>): {
   return { stats, total };
 }
 
+/**
+ * Effective category list & per-category counts.
+ *
+ * - Starts from built-in categories in recnik.json.
+ * - Adds user-created categories.
+ * - Removes user-deleted categories.
+ * - Recounts based on the live (edited) entries.
+ */
+export function getEffectiveCategories(
+  state: EditsState,
+  byLetter: Record<string, RuntimeEntry[]>,
+): { categories: string[]; stats: Record<string, number> } {
+  const deleted = new Set(state.deletedCategories ?? []);
+  const builtins = (recnik.categories ?? []).filter((c) => !deleted.has(c));
+  const customs = (state.customCategories ?? []).filter((c) => !deleted.has(c));
+
+  // Union, preserving order: built-ins first, then customs (de-duped).
+  const seen = new Set<string>();
+  const categories: string[] = [];
+  for (const c of [...builtins, ...customs]) {
+    if (!seen.has(c)) {
+      seen.add(c);
+      categories.push(c);
+    }
+  }
+
+  // Recount from live entries.
+  const stats: Record<string, number> = {};
+  for (const c of categories) stats[c] = 0;
+  for (const letter of Object.keys(byLetter)) {
+    for (const e of byLetter[letter]) {
+      if (!e.category) continue;
+      if (deleted.has(e.category)) continue;
+      // Auto-include category that exists on entries even if not registered yet
+      if (!(e.category in stats)) {
+        stats[e.category] = 0;
+        if (!seen.has(e.category)) {
+          seen.add(e.category);
+          categories.push(e.category);
+        }
+      }
+      stats[e.category] += 1;
+    }
+  }
+
+  return { categories, stats };
+}
+
 /** Build a full RecnikData snapshot with all edits applied (for export). */
 export function buildEffectiveRecnik(state: EditsState = loadEdits()): RecnikData {
   const byLetter = getEffectiveByLetter(state);
   const { stats } = getEffectiveStats(byLetter);
+  const { categories, stats: categoryStats } = getEffectiveCategories(state, byLetter);
   // Strip runtime-only fields when exporting
   const cleaned: Record<string, Entry[]> = {};
   for (const letter of recnik.alphabet) {
@@ -150,8 +205,8 @@ export function buildEffectiveRecnik(state: EditsState = loadEdits()): RecnikDat
     alphabet: recnik.alphabet,
     stats,
     byLetter: cleaned,
-    categories: recnik.categories,
-    categoryStats: recnik.categoryStats,
+    categories,
+    categoryStats,
   };
 }
 
