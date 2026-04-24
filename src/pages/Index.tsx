@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,8 @@ import {
   Book,
   Sparkles,
   Trash2,
+  Upload,
+  FileJson,
 } from "lucide-react";
 import { toast } from "sonner";
 import { recnik, TOTAL_ENTRIES } from "@/data/recnik";
@@ -23,6 +25,11 @@ import { useRecnikEdits } from "@/hooks/useRecnikEdits";
 import { buildEffectiveRecnik, clearAllEdits } from "@/lib/recnikEdits";
 import { generateDocx, generatePdf } from "@/lib/recnikExport";
 import { generateEpub } from "@/lib/recnikEpub";
+import {
+  buildExportPayload,
+  downloadJson,
+  importJsonFile,
+} from "@/lib/recnikJsonIO";
 
 const PDF_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.pdf";
 const DOCX_PATH = "/downloads/ZAPLANJSKI_RECNIK_modern.docx";
@@ -45,7 +52,9 @@ function triggerDownload(href: string, filename: string) {
 const Index = () => {
   const isPreview = typeof window !== "undefined" && window.location.hostname.includes("id-preview--");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | "epub" | null>(null);
+  const [isExporting, setIsExporting] = useState<"docx" | "pdf" | "epub" | "json" | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { summary, total } = useRecnikEdits();
   const hasEdits = summary.total > 0;
 
@@ -121,6 +130,59 @@ const Index = () => {
       toast.error("Грешка при прављењу PDF-а", { id: tid });
     } finally {
       setIsExporting(null);
+    }
+  };
+
+  const handleJsonExport = () => {
+    if (isExporting) return;
+    setIsExporting("json");
+    try {
+      const payload = buildExportPayload();
+      const datestamp = new Date().toISOString().slice(0, 10);
+      downloadJson(`ZAPLANJSKI_RECNIK_${datestamp}.json`, payload);
+      toast.success("JSON је преузет", {
+        description: `${total.toLocaleString("sr-Cyrl")} одредница • са изменама`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при извозу JSON-а");
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleJsonImportClick = () => {
+    if (isImporting) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleJsonFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset input so the same file can be picked again later.
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+    if (
+      hasEdits &&
+      !confirm(
+        `Учитавањем фајла биће замењене све твоје тренутне локалне измене (${summary.total}). Наставити?`,
+      )
+    ) {
+      return;
+    }
+    setIsImporting(true);
+    const tid = toast.loading("Учитавам JSON…");
+    try {
+      const result = await importJsonFile(file);
+      toast.success("Речник је учитан", {
+        id: tid,
+        description: `${result.totalEntries.toLocaleString("sr-Cyrl")} одредница · ${result.edits} измена · ${result.adds} додатих · ${result.deletes} обрисаних`,
+      });
+    } catch (err) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : "Неуспео увоз JSON-а";
+      toast.error("Грешка при учитавању", { id: tid, description: message });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -251,6 +313,50 @@ const Index = () => {
                 <div className="hidden lg:block" aria-hidden="true" />
               )}
             </div>
+          </div>
+
+          {/* JSON backup / restore — share or persist your full dictionary */}
+          <div className="mt-4 rounded-2xl border border-border bg-card/60 p-5 shadow-sm">
+            <div className="mb-3 flex flex-col items-center justify-center gap-1 text-center">
+              <div className="flex items-center gap-2">
+                <FileJson className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  Резервна копија речника (JSON)
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Преузми цео речник са твојим изменама као JSON, или учитај JSON да наставиш где си стао — без пријаве, све ради локално у твом прегледачу.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Button
+                size="lg"
+                onClick={handleJsonExport}
+                disabled={isExporting !== null || isImporting}
+                variant="outline"
+                className="h-12 w-full gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting === "json" ? "Извозим JSON…" : "Преузми JSON"}
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleJsonImportClick}
+                disabled={isExporting !== null || isImporting}
+                variant="outline"
+                className="h-12 w-full gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {isImporting ? "Учитавам…" : "Учитај JSON"}
+              </Button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleJsonFileChosen}
+              className="hidden"
+            />
           </div>
 
           {isPreview && (
