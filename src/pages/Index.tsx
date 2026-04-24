@@ -315,6 +315,50 @@ const Index = () => {
             </div>
           </div>
 
+          {/* JSON backup / restore — share or persist your full dictionary */}
+          <div className="mt-4 rounded-2xl border border-border bg-card/60 p-5 shadow-sm">
+            <div className="mb-3 flex flex-col items-center justify-center gap-1 text-center">
+              <div className="flex items-center gap-2">
+                <FileJson className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  Резервна копија речника (JSON)
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Преузми цео речник са твојим изменама као JSON, или учитај JSON да наставиш где си стао — без пријаве, све ради локално у твом прегледачу.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Button
+                size="lg"
+                onClick={handleJsonExport}
+                disabled={isExporting !== null || isImporting}
+                variant="outline"
+                className="h-12 w-full gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting === "json" ? "Извозим JSON…" : "Преузми JSON"}
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleJsonImportClick}
+                disabled={isExporting !== null || isImporting}
+                variant="outline"
+                className="h-12 w-full gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {isImporting ? "Учитавам…" : "Учитај JSON"}
+              </Button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleJsonFileChosen}
+              className="hidden"
+            />
+          </div>
+
           {isPreview && (
             <div className="mt-4 flex justify-center">
               <Button asChild variant="outline" size="sm" className="gap-2">
