@@ -25,8 +25,9 @@ function letterXhtml(letter: string, entries: RecnikData["byLetter"][string]): s
     .map((e) => {
       const hw = escapeXml(e.headword || "");
       const pos = e.pos ? ` <em class="pos">[${escapeXml(e.pos)}]</em>` : "";
+      const cat = e.category ? ` <span class="cat">(${escapeXml(e.category)})</span>` : "";
       const def = e.definition ? ` ${escapeXml(e.definition)}` : "";
-      return `      <p class="entry"><strong class="hw">${hw}</strong>${pos}${def}</p>`;
+      return `      <p class="entry"><strong class="hw">${hw}</strong>${pos}${cat}${def}</p>`;
     })
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -53,6 +54,7 @@ p.count { text-align: center; color: #888; font-style: italic; font-size: 0.85em
 p.entry { text-indent: -1em; padding-left: 1em; margin: 0.35em 0; }
 strong.hw { color: #1f4e79; }
 em.pos { color: #666; font-size: 0.9em; }
+span.cat { color: #1f7a5a; font-size: 0.85em; font-style: italic; }
 nav.toc ol { list-style: none; padding: 0; columns: 4; }
 nav.toc li { margin: 0.4em 0; font-size: 1.2em; font-weight: bold; }
 h1.title { font-size: 3em; text-align: center; margin: 2em 0 0.2em; }
