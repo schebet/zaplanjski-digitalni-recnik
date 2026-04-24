@@ -257,3 +257,97 @@ export function summarizeEdits(state: EditsState = loadEdits()) {
   }
   return { edits, deletes, adds, total: edits + deletes + adds };
 }
+
+/* -------------------------------------------------------------------------- */
+/*                              Category mutators                             */
+/* -------------------------------------------------------------------------- */
+
+/** Add a brand-new category. No-op if it already exists or is blank. */
+export function addCategory(name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  const state = loadEdits();
+  const builtins = new Set(recnik.categories ?? []);
+  const customs = new Set(state.customCategories ?? []);
+  // If it was previously deleted, just un-delete it.
+  const deleted = new Set(state.deletedCategories ?? []);
+  if (deleted.has(trimmed)) {
+    state.deletedCategories = (state.deletedCategories ?? []).filter((c) => c !== trimmed);
+    saveEdits(state);
+    return true;
+  }
+  if (builtins.has(trimmed) || customs.has(trimmed)) return false;
+  state.customCategories = [...(state.customCategories ?? []), trimmed];
+  saveEdits(state);
+  return true;
+}
+
+/**
+ * Delete a category. Built-ins are tombstoned (added to deletedCategories so
+ * they stop appearing). Custom categories are simply removed from the list.
+ * Any entries currently using the category will have it stripped at read time.
+ */
+export function deleteCategory(name: string) {
+  const state = loadEdits();
+  const builtins = new Set(recnik.categories ?? []);
+  if (builtins.has(name)) {
+    const set = new Set(state.deletedCategories ?? []);
+    set.add(name);
+    state.deletedCategories = Array.from(set);
+  }
+  state.customCategories = (state.customCategories ?? []).filter((c) => c !== name);
+  saveEdits(state);
+}
+
+/**
+ * Rename a category everywhere it is used. Updates the registry (custom
+ * categories) and patches every entry currently tagged with `from`.
+ */
+export function renameCategory(from: string, to: string) {
+  const target = to.trim();
+  if (!target || target === from) return;
+  const state = loadEdits();
+
+  // 1) Update the registry
+  const builtins = new Set(recnik.categories ?? []);
+  if (builtins.has(from)) {
+    // Tombstone the old built-in name and add the new one as a custom category.
+    const del = new Set(state.deletedCategories ?? []);
+    del.add(from);
+    state.deletedCategories = Array.from(del);
+    if (!builtins.has(target) && !(state.customCategories ?? []).includes(target)) {
+      state.customCategories = [...(state.customCategories ?? []), target];
+    }
+  } else {
+    state.customCategories = (state.customCategories ?? []).map((c) =>
+      c === from ? target : c,
+    );
+  }
+  // If the new name was previously tombstoned, un-tombstone it.
+  state.deletedCategories = (state.deletedCategories ?? []).filter((c) => c !== target);
+
+  // 2) Patch every entry that uses the old category, including originals.
+  const seenIds = new Set<string>();
+  for (const [id, ov] of Object.entries(state.overrides)) {
+    if (ov.type === "edit" || ov.type === "add") {
+      if (ov.data.category === from) {
+        state.overrides[id] = { ...ov, data: { ...ov.data, category: target } };
+      }
+    }
+    seenIds.add(id);
+  }
+  for (const letter of recnik.alphabet) {
+    const original = recnik.byLetter[letter] ?? [];
+    original.forEach((entry, idx) => {
+      if (entry.category !== from) return;
+      const id = originalEntryId(letter, idx);
+      if (seenIds.has(id)) return; // already handled (edited/deleted)
+      state.overrides[id] = {
+        type: "edit",
+        data: { ...entry, category: target },
+      };
+    });
+  }
+
+  saveEdits(state);
+}
