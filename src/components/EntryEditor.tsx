@@ -88,6 +88,7 @@ export default function EntryEditor({ open, onOpenChange, entry, letter }: Entry
   const [pos, setPos] = useState("");
   const [definition, setDefinition] = useState("");
   const [category, setCategory] = useState("");
+  const { categories, categoryStats } = useRecnikEdits();
 
   useEffect(() => {
     if (open && entry) {
@@ -99,6 +100,18 @@ export default function EntryEditor({ open, onOpenChange, entry, letter }: Entry
   }, [open, entry]);
 
   if (!entry) return null;
+
+  const handleAddCategory = () => {
+    const name = window.prompt("Назив нове категорије:");
+    if (!name) return;
+    const ok = addCategory(name);
+    if (!ok) {
+      toast.error("Категорија већ постоји или је назив празан");
+      return;
+    }
+    setCategory(name.trim());
+    toast.success("Категорија додата", { description: name.trim() });
+  };
 
   const handleSave = () => {
     const trimmed = headword.trim();
