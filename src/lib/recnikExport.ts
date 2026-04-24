@@ -82,6 +82,10 @@ export async function generateDocx(data: RecnikData): Promise<Blob> {
         runs.push(new TextRun({ text: "  " }));
         runs.push(new TextRun({ text: `[${pos}]`, italics: true, font: SERIF, size: 20, color: "666666" }));
       }
+      if (e.category) {
+        runs.push(new TextRun({ text: "  " }));
+        runs.push(new TextRun({ text: `(${e.category})`, italics: true, font: SERIF, size: 18, color: "1F7A5A" }));
+      }
       if (definition) {
         runs.push(new TextRun({ text: "  " }));
         runs.push(new TextRun({ text: definition, font: SERIF, size: 22 }));
