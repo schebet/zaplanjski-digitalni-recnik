@@ -1,4 +1,24 @@
-# Welcome to your Lovable project
+# Заплањски Речник — Lovable project
+
+> ## 🛟 PROMPT ZA REKONSTRUKCIJU PROJEKTA (iz GitHub-a ili od nule)
+>
+> Ako se projekat ošteti ili želiš da ga ponovo izgradiš u novom Lovable workspace-u,
+> kopiraj ceo blok ispod (od "Napravi PWA..." do kraja sekcije "NAPOMENE") i pošalji
+> ga kao prvi prompt novom Lovable projektu. Zatim poveži GitHub repo i sve datoteke
+> iz `src/data/recnik.json` će se automatski sinhronizovati.
+>
+> **Koraci za vraćanje iz GitHub-a:**
+> 1. Napravi nov Lovable projekat i pošalji prompt ispod kao prvu poruku.
+> 2. U novom projektu otvori **Connectors → GitHub → Connect project** i poveži
+>    isti repozitorijum (ili importuj kod ručno: `git clone <repo>`, pa kopiraj
+>    `src/`, `public/`, `index.html`, `package.json`, `vite.config.ts`,
+>    `tailwind.config.ts`, `tsconfig*.json`, `postcss.config.js`, `components.json`).
+> 3. Pokreni `npm install && npm run dev` lokalno da potvrdiš da sve radi.
+> 4. Korisničke izmene rečnika se čuvaju u `localStorage` browsera. Za prenos koristi
+>    dugme **Преузми JSON** na početnoj stranici, pa posle u novoj instalaciji
+>    klikni **Учитај JSON**.
+>
+> ---
 
 Napravi PWA web-aplikaciju "Заплањски Речник" — interaktivni dijalekatski rečnik 
 zaplanjskog govora (srpska ćirilica) sa sledećim karakteristikama:
